@@ -1,0 +1,95 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 233 28% 14%; /* #1a1a2e */
+    --foreground: 210 10% 95%;
+    --card: 233 25% 18%;
+    --card-foreground: 210 10% 95%;
+    --popover: 233 25% 18%;
+    --popover-foreground: 210 10% 95%;
+    --primary: 340 100% 71%; /* #FF6B9D */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 233 20% 22%;
+    --secondary-foreground: 210 10% 95%;
+    --muted: 233 20% 22%;
+    --muted-foreground: 210 10% 70%;
+    --accent: 340 100% 71%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 233 20% 25%;
+    --input: 233 20% 25%;
+    --ring: 340 100% 71%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 233 28% 14%;
+    --foreground: 210 10% 95%;
+    --card: 233 25% 18%;
+    --card-foreground: 210 10% 95%;
+    --popover: 233 25% 18%;
+    --popover-foreground: 210 10% 95%;
+    --primary: 340 100% 71%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 233 20% 22%;
+    --secondary-foreground: 210 10% 95%;
+    --muted: 233 20% 22%;
+    --muted-foreground: 210 10% 70%;
+    --accent: 340 100% 71%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 233 20% 25%;
+    --input: 233 20% 25%;
+    --ring: 340 100% 71%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: 'Poppins', sans-serif;
+    overflow-x: clip;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-ticket, #printable-ticket * {
+    visibility: visible;
+  }
+  #printable-ticket {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    color: black !important;
+    background: white !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
