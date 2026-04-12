@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -6,16 +6,43 @@ import { Search, Star } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import Navbar from '../components/Navbar.jsx';
-import { movies } from '../data/mockData.js';
 import { useBooking } from '../context/BookingContext.jsx';
+
+const GATEWAY_URL = 'http://localhost:8080';
 
 const MovieListPage = () => {
   const [activeTab, setActiveTab] = useState('Tất cả');
   const [searchQuery, setSearchQuery] = useState('');
+  const [movies, setMovies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
   const navigate = useNavigate();
   const { selectMovie } = useBooking();
 
   const tabs = ['Tất cả', 'Hollywood', 'Bollywood', 'Khác'];
+
+  // GỌI API LẤY DANH SÁCH PHIM TỪ BACKEND
+  useEffect(() => {
+    const fetchMovies = async () => {
+      try {
+        const response = await fetch(`${GATEWAY_URL}/api/movies`);
+        if (response.ok) {
+          const data = await response.json();
+          // Xử lý chuỗi formats từ DB (VD: "2D, 3D") thành mảng ["2D", "3D"] để UI render được
+          const formattedMovies = data.map(m => ({
+            ...m,
+            formats: m.formats ? m.formats.split(',').map(f => f.trim()) : ['2D']
+          }));
+          setMovies(formattedMovies);
+        }
+      } catch (error) {
+        console.error("Lỗi tải phim:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMovies();
+  }, []);
 
   const filteredMovies = movies.filter((movie) => {
     const matchesTab = activeTab === 'Tất cả' || movie.genre === activeTab;
@@ -70,7 +97,9 @@ const MovieListPage = () => {
             ))}
           </div>
 
-          {filteredMovies.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-20 text-muted-foreground">Đang tải danh sách phim từ Server...</div>
+          ) : filteredMovies.length === 0 ? (
             <div className="text-center py-20">
               <p className="text-muted-foreground text-lg">Không tìm thấy phim nào phù hợp.</p>
             </div>
@@ -108,7 +137,7 @@ const MovieListPage = () => {
                       </div>
 
                       <div className="flex gap-2 flex-wrap mb-4">
-                        {movie.formats.map((format) => (
+                        {movie.formats && movie.formats.map((format) => (
                           <span
                             key={format}
                             className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded-md"

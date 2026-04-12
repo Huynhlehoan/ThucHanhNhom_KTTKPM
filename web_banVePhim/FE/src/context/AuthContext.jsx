@@ -14,6 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Lấy dữ liệu user từ LocalStorage khi F5 lại trang
   useEffect(() => {
     const storedUser = localStorage.getItem('pvr_user');
     if (storedUser) {
@@ -22,28 +23,10 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = (email, password) => {
-    const mockUser = {
-      id: 1,
-      email: email,
-      name: email.split('@')[0],
-      joinedDate: new Date().toISOString()
-    };
-    setUser(mockUser);
-    localStorage.setItem('pvr_user', JSON.stringify(mockUser));
-    return { success: true, user: mockUser };
-  };
-
-  const register = (email, password, name) => {
-    const mockUser = {
-      id: Date.now(),
-      email: email,
-      name: name || email.split('@')[0],
-      joinedDate: new Date().toISOString()
-    };
-    setUser(mockUser);
-    localStorage.setItem('pvr_user', JSON.stringify(mockUser));
-    return { success: true, user: mockUser };
+  // Hàm này sẽ được gọi bên trong LoginPage.jsx SAU KHI fetch API Spring Boot thành công
+  const login = (userData) => {
+    setUser(userData);
+    localStorage.setItem('pvr_user', JSON.stringify(userData));
   };
 
   const logout = () => {
@@ -54,7 +37,6 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     login,
-    register,
     logout,
     loading,
     isAuthenticated: !!user

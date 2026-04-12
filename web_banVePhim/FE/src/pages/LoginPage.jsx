@@ -9,6 +9,8 @@ import { Label } from '../components/ui/label';
 import { useAuth } from '../context/AuthContext.jsx';
 import { toast } from 'sonner';
 
+const GATEWAY_URL = 'http://localhost:8080';
+
 const LoginPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -16,7 +18,9 @@ const LoginPage = () => {
   const [name, setName] = useState('');
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
-  const { login, register } = useAuth();
+  
+  // Chỉ lấy hàm login từ context (vì register giờ gọi API thẳng)
+  const { login } = useAuth();
 
   const validateForm = () => {
     const newErrors = {};
@@ -41,23 +45,54 @@ const LoginPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  // ĐÃ SỬA THÀNH HÀM ASYNC ĐỂ GỌI API BACKEND
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) return;
 
-    if (isLogin) {
-      const result = login(email, password);
-      if (result.success) {
-        toast.success('Đăng nhập thành công');
-        navigate('/');
+    try {
+      if (isLogin) {
+        // --- GỌI API ĐĂNG NHẬP ---
+        const response = await fetch(`${GATEWAY_URL}/api/users/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          // Chú ý: Backend nhận 'username', ta truyền 'email' vào
+          body: JSON.stringify({ username: email, password: password })
+        });
+        
+        const data = await response.json();
+
+        if (response.ok) {
+          toast.success(data.message || 'Đăng nhập thành công');
+          // Lưu vào Context/LocalStorage để các trang khác biết user đã login
+          login({ username: email, name: email.split('@')[0] }); 
+          navigate('/');
+        } else {
+          toast.error(data.message || 'Sai tài khoản hoặc mật khẩu');
+        }
+
+      } else {
+        // --- GỌI API ĐĂNG KÝ ---
+        const response = await fetch(`${GATEWAY_URL}/api/users/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: email, password: password })
+        });
+        
+        const data = await response.json();
+
+        if (response.ok) {
+          toast.success('Đăng ký thành công! Vui lòng đăng nhập.');
+          setIsLogin(true); // Chuyển form sang Đăng nhập
+          setPassword('');  // Xóa trắng ô password cho an toàn
+        } else {
+          toast.error(data.message || 'Đăng ký thất bại');
+        }
       }
-    } else {
-      const result = register(email, password, name);
-      if (result.success) {
-        toast.success('Đăng ký thành công');
-        navigate('/');
-      }
+    } catch (error) {
+      console.error("Lỗi API:", error);
+      toast.error('Không thể kết nối đến máy chủ! Vui lòng kiểm tra lại Gateway.');
     }
   };
 
@@ -116,12 +151,12 @@ const LoginPage = () => {
               )}
 
               <div>
-                <Label htmlFor="email" className="text-foreground">Email</Label>
+                <Label htmlFor="email" className="text-foreground">Email / Tên đăng nhập</Label>
                 <div className="relative mt-1">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
                     id="email"
-                    type="email"
+                    type="text"
                     placeholder="Nhập địa chỉ email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
