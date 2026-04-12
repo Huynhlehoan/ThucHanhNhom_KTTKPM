@@ -2,44 +2,136 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Star, Clock, MapPin } from 'lucide-react';
+import { ArrowLeft, Star, Clock, MapPin, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import Navbar from '../components/Navbar.jsx';
 import SeatGrid from '../components/SeatGrid.jsx';
 import OrderSummary from '../components/OrderSummary.jsx';
 import { useBooking } from '../context/BookingContext.jsx';
-import { movies, seats as initialSeats, shows } from '../data/mockData.js';
 import { toast } from 'sonner';
+
+const GATEWAY_URL = 'http://localhost:8080';
 
 const BookingPage = () => {
   const { movieId } = useParams();
   const navigate = useNavigate();
-  const { selectMovie, selectedMovie, selectedSeats, toggleSeat, createBooking } = useBooking();
-  const [orderId] = useState(`ORD-${Math.floor(1000 + Math.random() * 9000)}`);
+  const { selectedSeats, toggleSeat } = useBooking();
+  
+  const [selectedMovie, setSelectedMovie] = useState(null);
+  const [shows, setShows] = useState([]);
+  const [seats, setSeats] = useState([]); 
+  const [loading, setLoading] = useState(true);
 
+  // 1. LẤY CHI TIẾT PHIM VÀ LỊCH CHIẾU
   useEffect(() => {
-    const movie = movies.find(m => m.id === parseInt(movieId));
-    if (movie) {
-      selectMovie(movie);
-    } else {
-      navigate('/movies');
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Lấy thông tin phim
+        const movieRes = await fetch(`${GATEWAY_URL}/api/movies/${movieId}`);
+        if (!movieRes.ok) throw new Error("Không tìm thấy phim");
+        const movieData = await movieRes.json();
+        setSelectedMovie(movieData);
+
+        // Lấy lịch chiếu của phim này
+        const showsRes = await fetch(`${GATEWAY_URL}/api/movies/${movieId}/shows`);
+        if (showsRes.ok) {
+          const showsData = await showsRes.json();
+          setShows(showsData);
+          
+          if (showsData.length > 0) {
+            fetchSeats(showsData[0].id);
+          }
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error("Lỗi tải dữ liệu phim.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [movieId]);
+
+  // 2. HÀM LẤY SƠ ĐỒ GHẾ
+  const fetchSeats = async (showId) => {
+    try {
+      const res = await fetch(`${GATEWAY_URL}/api/movies/shows/${showId}/seats`);
+      if (res.ok) {
+        const seatsData = await res.json();
+        const formattedSeats = seatsData.map(s => ({
+          ...s,
+          row: s.rowName,
+          number: s.seatNumber
+        }));
+        setSeats(formattedSeats);
+      }
+    } catch (e) {
+      console.error("Lỗi lấy ghế:", e);
     }
-  }, [movieId, navigate, selectMovie]);
-
-  if (!selectedMovie) return null;
-
-  const movieShows = shows.filter(show => show.movieId === selectedMovie.id);
-  const selectedShow = movieShows[0]; // Default to first show for simplicity
-
-  const handleCompleteBooking = (details) => {
-    const booking = createBooking(details.paymentMethod, {
-      name: details.customerName,
-      contact: details.customerContact
-    });
-    
-    toast.success('Đặt vé thành công!');
-    navigate('/confirmation', { state: { booking } });
   };
+
+  const selectedShow = shows[0];
+
+// 3. GỬI API ĐẶT VÉ 
+  const handleCompleteBooking = async (details) => {
+    if (selectedSeats.length === 0) {
+      return toast.error("Vui lòng chọn ít nhất 1 ghế!");
+    }
+
+    try {
+      const userId = details.customerName || "guest_user";
+      
+      const apiUrl = `${GATEWAY_URL}/api/bookings`;
+
+      // Phải có headers Content-Type và body JSON.stringify
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json' // Báo cho Java biết đây là JSON
+        },
+        body: JSON.stringify({ 
+          userId: userId, 
+          movieId: movieId.toString() 
+        }) // Gói hàng JSON gửi đi
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        toast.success('Đặt vé thành công!');
+
+        // Đóng gói dữ liệu chuẩn để trang Confirmation hiển thị được
+        const finalBooking = {
+          id: data.id || data.bookingId, 
+          movieTitle: selectedMovie.title,
+          seats: selectedSeats.map(s => `${s.row}${s.number}`),
+          date: new Date().toLocaleDateString('vi-VN'),
+          time: selectedShow?.time || 'N/A',
+          screen: selectedShow?.screen || 'N/A',
+          format: selectedShow?.format || '2D',
+          totalAmount: selectedSeats.reduce((sum, seat) => sum + seat.price, 0),
+        };
+        
+        navigate('/confirmation', { state: { booking: finalBooking } });
+      } else {
+        const errorText = await res.text();
+        console.error("Server Error:", errorText);
+        toast.error('Lỗi server khi tạo đơn hàng. Backend báo lỗi!');
+      }
+    } catch (error) {
+      console.error("Fetch Error:", error);
+      toast.error('Lỗi kết nối máy chủ!');
+    }
+  };
+
+  if (loading || !selectedMovie) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        <p className="mt-4 text-muted-foreground">Đang tải phòng chiếu...</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -54,90 +146,48 @@ const BookingPage = () => {
           <Button
             variant="ghost"
             onClick={() => navigate('/movies')}
-            className="mb-6 text-muted-foreground hover:text-foreground"
+            className="mb-6 text-muted-foreground"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Quay lại danh sách phim
+            <ArrowLeft className="w-4 h-4 mr-2" /> Quay lại
           </Button>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Left: Movie Details */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4 }}
-              className="lg:col-span-3"
-            >
-              <div className="bg-card rounded-xl border border-border p-6 sticky top-24">
-                <img
-                  src={selectedMovie.poster}
-                  alt={selectedMovie.title}
-                  className="w-full aspect-[2/3] object-cover rounded-lg mb-4"
-                />
-                
-                <h2 className="text-xl font-bold text-foreground mb-2">
-                  {selectedMovie.title}
-                </h2>
-                
+            {/* Phim */}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="lg:col-span-3">
+              <div className="bg-card rounded-xl border p-6 sticky top-24">
+                <img src={selectedMovie.poster} alt={selectedMovie.title} className="w-full rounded-lg mb-4"/>
+                <h2 className="text-xl font-bold mb-2">{selectedMovie.title}</h2>
                 <div className="flex items-center gap-2 mb-4">
                   <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                  <span className="font-semibold text-foreground">{selectedMovie.rating}</span>
-                  <span className="text-muted-foreground">/ 10</span>
+                  <span>{selectedMovie.rating}</span>
                 </div>
 
                 {selectedShow && (
-                  <div className="space-y-3 pt-4 border-t border-border">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-foreground">{selectedShow.time}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <MapPin className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-foreground">{selectedShow.screen}</span>
-                    </div>
-                    <div className="flex gap-2 mt-2">
-                      <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded-md">
-                        {selectedShow.format}
-                      </span>
-                      <span className="px-2 py-1 bg-muted text-muted-foreground text-xs font-medium rounded-md">
-                        {selectedShow.language}
-                      </span>
-                    </div>
+                  <div className="space-y-3 pt-4 border-t">
+                    <div className="flex items-center gap-2 text-sm"><Clock className="w-4 h-4" /> <span>{selectedShow.time}</span></div>
+                    <div className="flex items-center gap-2 text-sm"><MapPin className="w-4 h-4" /> <span>{selectedShow.screen}</span></div>
+                    <div className="px-2 py-1 bg-primary/10 text-primary text-xs inline-block rounded">{selectedShow.format}</div>
                   </div>
                 )}
               </div>
             </motion.div>
 
-            {/* Center: Seat Grid */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
-              className="lg:col-span-6"
-            >
-              <div className="bg-card rounded-xl border border-border p-6">
-                <h3 className="text-xl font-semibold text-foreground mb-6">Chọn ghế của bạn</h3>
-                <SeatGrid
-                  seats={initialSeats}
-                  selectedSeats={selectedSeats}
-                  onSeatClick={toggleSeat}
-                />
+            {/* Ghế */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="lg:col-span-6">
+              <div className="bg-card rounded-xl border p-6">
+                <h3 className="text-xl font-semibold mb-6">Chọn ghế</h3>
+                {seats.length > 0 ? (
+                  <SeatGrid seats={seats} selectedSeats={selectedSeats} onSeatClick={toggleSeat} />
+                ) : (
+                  <div className="text-center py-10 text-muted-foreground">Đang tải ghế...</div>
+                )}
               </div>
             </motion.div>
 
-            {/* Right: Order Summary */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 }}
-              className="lg:col-span-3"
-            >
+            {/* Summary */}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="lg:col-span-3">
               <div className="sticky top-24">
-                <OrderSummary
-                  orderId={orderId}
-                  selectedSeats={selectedSeats}
-                  onComplete={handleCompleteBooking}
-                />
+                <OrderSummary orderId={"New Order"} selectedSeats={selectedSeats} onComplete={handleCompleteBooking} />
               </div>
             </motion.div>
           </div>

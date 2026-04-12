@@ -3,25 +3,48 @@ import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Ticket } from 'lucide-react';
 import Navbar from '../components/Navbar.jsx';
-import { useBooking } from '../context/BookingContext.jsx';
-import { bookings as mockBookings } from '../data/mockData.js';
 import { Button } from '../components/ui/button';
 
-const TicketHistoryPage = () => {
-  const { getBookings } = useBooking();
-  const [allBookings, setAllBookings] = useState([]);
+const GATEWAY_URL = 'http://localhost:8080';
 
+const TicketHistoryPage = () => {
+  const [allBookings, setAllBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // GỌI API LẤY LỊCH SỬ ĐẶT VÉ
   useEffect(() => {
-    const userBookings = getBookings();
-    const combined = [...userBookings, ...mockBookings];
-    setAllBookings(combined);
-  }, [getBookings]);
+    const fetchHistory = async () => {
+      try {
+        const response = await fetch(`${GATEWAY_URL}/api/bookings`);
+        if (response.ok) {
+          const data = await response.json();
+          // Map data từ Backend cho khớp với table UI
+          const formattedData = data.map(b => ({
+            id: b.id,
+            movieTitle: `Phim ID: ${b.movieId}`, // Đồ án nếu không map chéo DB thì hiển thị tạm ID phim
+            seats: ['Ghế tiêu chuẩn'], 
+            date: new Date().toLocaleDateString(),
+            time: 'N/A',
+            totalAmount: b.amount,
+            status: b.status === "PENDING" ? "Đang xử lý" : 
+                    b.status === "CONFIRMED" ? "Đã xác nhận" : "Đã hủy"
+          }));
+          setAllBookings(formattedData);
+        }
+      } catch (error) {
+        console.error("Chưa có API Get All Bookings hoặc lỗi mạng", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHistory();
+  }, []);
 
   const getStatusColor = (status) => {
     switch(status) {
       case 'Đã xác nhận': return 'bg-green-500/10 text-green-500';
       case 'Đã hủy': return 'bg-destructive/10 text-destructive';
-      case 'Sắp diễn ra': return 'bg-primary/10 text-primary';
+      case 'Đang xử lý': return 'bg-yellow-500/10 text-yellow-500';
       default: return 'bg-muted text-muted-foreground';
     }
   };
@@ -38,7 +61,9 @@ const TicketHistoryPage = () => {
         <main className="flex-1 px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto w-full">
           <h1 className="text-3xl font-bold text-foreground mb-8">Lịch sử đặt vé</h1>
 
-          {allBookings.length === 0 ? (
+          {loading ? (
+             <p className="text-center text-muted-foreground">Đang tải dữ liệu...</p>
+          ) : allBookings.length === 0 ? (
             <div className="text-center py-20 bg-card rounded-xl border border-border">
               <Ticket className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground text-lg">Bạn chưa có lịch sử đặt vé nào.</p>
@@ -51,11 +76,9 @@ const TicketHistoryPage = () => {
                     <tr className="bg-muted/50 border-b border-border">
                       <th className="p-4 font-medium text-muted-foreground">Mã đơn</th>
                       <th className="p-4 font-medium text-muted-foreground">Phim</th>
-                      <th className="p-4 font-medium text-muted-foreground">Ghế</th>
                       <th className="p-4 font-medium text-muted-foreground">Ngày/Giờ</th>
                       <th className="p-4 font-medium text-muted-foreground">Giá</th>
                       <th className="p-4 font-medium text-muted-foreground">Trạng thái</th>
-                      <th className="p-4 font-medium text-muted-foreground text-right">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -67,22 +90,14 @@ const TicketHistoryPage = () => {
                         transition={{ duration: 0.3, delay: index * 0.05 }}
                         className="border-b border-border hover:bg-muted/20 transition-colors"
                       >
-                        <td className="p-4 font-mono text-sm text-foreground">{booking.id}</td>
+                        <td className="p-4 font-mono text-sm text-foreground">{booking.id.split('-')[0]}...</td>
                         <td className="p-4 font-medium text-foreground">{booking.movieTitle}</td>
-                        <td className="p-4 text-primary font-medium">{booking.seats.join(', ')}</td>
-                        <td className="p-4 text-muted-foreground text-sm">
-                          {booking.date} <br/> {booking.time}
-                        </td>
-                        <td className="p-4 font-medium text-foreground">${booking.totalAmount.toFixed(2)}</td>
+                        <td className="p-4 text-muted-foreground text-sm">{booking.date}</td>
+                        <td className="p-4 font-medium text-foreground">{booking.totalAmount.toLocaleString()}đ</td>
                         <td className="p-4">
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
                             {booking.status}
                           </span>
-                        </td>
-                        <td className="p-4 text-right">
-                          <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80">
-                            Xem chi tiết
-                          </Button>
                         </td>
                       </motion.tr>
                     ))}
