@@ -15,8 +15,12 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> payload) {
-        User user = userService.register(payload.get("username"), payload.get("password"));
-        return ResponseEntity.ok(Map.of("message", "Đăng ký thành công", "userId", user.getId()));
+        try {
+            User user = userService.register(payload.get("username"), payload.get("password"));
+            return ResponseEntity.ok(Map.of("message", "Đăng ký thành công", "userId", user.getId()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Đăng ký thất bại: Tài khoản có thể đã tồn tại"));
+        }
     }
 
     @PostMapping("/login")

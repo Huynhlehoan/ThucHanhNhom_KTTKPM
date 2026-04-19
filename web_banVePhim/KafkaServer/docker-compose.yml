@@ -18,8 +18,8 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # CHÚ Ý: Đổi 'localhost' thành '172.27.98.64' nếu bạn chia sẻ cho máy khác kết nối nhé!
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://192.168.137.129:9092
+      # Đã cấu hình để đọc biến môi trường IP_MAY1
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${IP_MAY1}:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1

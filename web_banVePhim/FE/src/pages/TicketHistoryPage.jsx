@@ -5,7 +5,7 @@ import { Ticket } from 'lucide-react';
 import Navbar from '../components/Navbar.jsx';
 import { Button } from '../components/ui/button';
 
-const GATEWAY_URL = 'http://localhost:8080';
+const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL;
 
 const TicketHistoryPage = () => {
   const [allBookings, setAllBookings] = useState([]);

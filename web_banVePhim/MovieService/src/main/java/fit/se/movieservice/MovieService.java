@@ -18,6 +18,7 @@ public class MovieService implements ApplicationRunner { // 1. Thêm implements 
     public Movie getMovieById(String id) { return movieRepository.findById(id).orElse(null); }
     public List<Showtime> getShowsByMovieId(String movieId) { return showtimeRepository.findByMovieId(movieId); }
     public List<Seat> getSeatsByShowtimeId(Long showtimeId) { return seatRepository.findByShowtimeId(showtimeId); }
+    public Movie saveMovie(Movie movie) { return movieRepository.save(movie); }
 
     // 2. XÓA BỎ @PostConstruct, thay bằng hàm run này
     @Override

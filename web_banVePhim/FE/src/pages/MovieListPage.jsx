@@ -8,7 +8,7 @@ import { Button } from '../components/ui/button';
 import Navbar from '../components/Navbar.jsx';
 import { useBooking } from '../context/BookingContext.jsx';
 
-const GATEWAY_URL = 'http://localhost:8080';
+const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL;
 
 const MovieListPage = () => {
   const [activeTab, setActiveTab] = useState('Tất cả');

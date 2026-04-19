@@ -10,7 +10,7 @@ import OrderSummary from '../components/OrderSummary.jsx';
 import { useBooking } from '../context/BookingContext.jsx';
 import { toast } from 'sonner';
 
-const GATEWAY_URL = 'http://localhost:8080';
+const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL;
 
 const BookingPage = () => {
   const { movieId } = useParams();

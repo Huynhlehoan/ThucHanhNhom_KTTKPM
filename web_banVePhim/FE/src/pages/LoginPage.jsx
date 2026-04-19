@@ -9,7 +9,7 @@ import { Label } from '../components/ui/label';
 import { useAuth } from '../context/AuthContext.jsx';
 import { toast } from 'sonner';
 
-const GATEWAY_URL = 'http://localhost:8080';
+const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL;
 
 const LoginPage = () => {
   const [isLogin, setIsLogin] = useState(true);

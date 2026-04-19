@@ -41,4 +41,17 @@ public class MovieController {
     public ResponseEntity<List<Seat>> getSeatsByShow(@PathVariable Long showId) {
         return ResponseEntity.ok(movieService.getSeatsByShowtimeId(showId));
     }
+
+    // Thêm phim mới
+    @PostMapping
+    public ResponseEntity<Movie> addMovie(@RequestBody Movie movie) {
+        return ResponseEntity.ok(movieService.saveMovie(movie));
+    }
+
+    // Sửa phim
+    @PutMapping("/{id}")
+    public ResponseEntity<Movie> updateMovie(@PathVariable String id, @RequestBody Movie movie) {
+        movie.setId(id);
+        return ResponseEntity.ok(movieService.saveMovie(movie));
+    }
 }

@@ -6,6 +6,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -32,6 +33,7 @@ public class BookingService {
         // 2. Bắn Event cho Payment
         Map<String, Object> event = Map.of(
                 "bookingId", booking.getId(),
+                "userId", userId,
                 "movieId", movieId,
                 "amount", booking.getAmount(),
                 "eventType", "BOOKING_CREATED"
@@ -52,5 +54,8 @@ public class BookingService {
             bookingRepository.save(booking);
             System.out.println(">>> Đã update DB: Booking " + bookingId + " thành " + booking.getStatus());
         }
+    }
+  public List<Booking> findByUserId(String userId) {
+        return bookingRepository.findByUserId(userId);
     }
 }

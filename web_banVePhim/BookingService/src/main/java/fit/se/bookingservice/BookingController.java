@@ -35,4 +35,9 @@ public class BookingController {
                 "status", newBooking.getStatus()
         ));
     }
+
+    @GetMapping
+    public ResponseEntity<?> getBookingsByUserId(@RequestParam String userId) {
+        return ResponseEntity.ok(bookingService.findByUserId(userId));
+    }
 }

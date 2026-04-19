@@ -25,7 +25,7 @@ public class GatewayServiceApplication {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("http://192.168.137.129:3000")
+                        .allowedOriginPatterns("*") // Hỗ trợ mọi nguồn linh hoạt hơn thay vì fix cứng IP
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true);

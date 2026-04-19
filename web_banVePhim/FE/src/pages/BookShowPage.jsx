@@ -32,15 +32,16 @@ const BookShowPage = () => {
       try {
         setLoading(true);
         // 1. Lấy danh sách suất chiếu của phim từ Movie Service
-        const showRes = await fetch(`http://localhost:8080/api/movies/${selectedMovie.id}/shows`);
-        const showsData = await showRes.json();
+        const showRes = await fetch(`${import.meta.env.VITE_GATEWAY_URL}/api/movies/${selectedMovie.id}/shows`);
+        const showData = await showRes.json();
+        setShows(showData);
         
-        if (showsData && showsData.length > 0) {
-          const firstShow = showsData[0];
+        // Auto select first show and fetch seats
+        if (showData.length > 0) {
+          const firstShow = showData[0];
           setCurrentShow(firstShow);
-
-          // 2. Lấy danh sách ghế của suất chiếu đó
-          const seatRes = await fetch(`http://localhost:8080/api/movies/shows/${firstShow.id}/seats`);
+          
+          const seatRes = await fetch(`${import.meta.env.VITE_GATEWAY_URL}/api/movies/shows/${firstShow.id}/seats`);
           const seatsData = await seatRes.json();
           setSeats(seatsData);
         } else {
