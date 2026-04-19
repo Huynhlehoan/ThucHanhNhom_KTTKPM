@@ -8,6 +8,7 @@ import Navbar from '../components/Navbar.jsx';
 import SeatGrid from '../components/SeatGrid.jsx';
 import OrderSummary from '../components/OrderSummary.jsx';
 import { useBooking } from '../context/BookingContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { toast } from 'sonner';
 
 const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL;
@@ -15,6 +16,7 @@ const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL;
 const BookingPage = () => {
   const { movieId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth(); // Lấy thông tin user đã đăng nhập
   const { selectedSeats, toggleSeat } = useBooking();
   
   const [selectedMovie, setSelectedMovie] = useState(null);
@@ -80,7 +82,7 @@ const BookingPage = () => {
     }
 
     try {
-      const userId = details.customerName || "guest_user";
+      const userId = user?.id || "guest_user";
       
       const apiUrl = `${GATEWAY_URL}/api/bookings`;
 

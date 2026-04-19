@@ -8,7 +8,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
-//@CrossOrigin("*")
 public class UserController {
     @Autowired
     private UserService userService;
@@ -25,9 +24,13 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> payload) {
-        boolean success = userService.login(payload.get("username"), payload.get("password"));
-        if (success) {
-            return ResponseEntity.ok(Map.of("message", "Đăng nhập thành công"));
+        User user = userService.login(payload.get("username"), payload.get("password"));
+        if (user != null) {
+            return ResponseEntity.ok(Map.of(
+                "message", "Đăng nhập thành công",
+                "userId", user.getId(),
+                "username", user.getUsername()
+            ));
         }
         return ResponseEntity.status(401).body(Map.of("message", "Sai tài khoản hoặc mật khẩu"));
     }

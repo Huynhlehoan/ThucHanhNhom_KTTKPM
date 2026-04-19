@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Film, Menu, X, User, LogOut } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext.jsx';
-import { Button } from '@/components/ui/button';
+import { useAuth } from '../context/AuthContext.jsx';
+import { Button } from './ui/button';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,6 +14,7 @@ const Navbar = () => {
     { name: 'Trang chủ', path: '/' },
     { name: 'Danh sách phim', path: '/movies' },
     { name: 'Lịch sử vé', path: '/history' },
+    { name: 'Ví của tôi', path: '/wallet' },
   ];
 
   const handleLogout = () => {

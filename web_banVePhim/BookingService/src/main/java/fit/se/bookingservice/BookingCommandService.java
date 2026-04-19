@@ -1,17 +1,14 @@
 package fit.se.bookingservice;
-import fit.se.bookingservice.Booking;
-import fit.se.bookingservice.BookingRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 @Service
-public class BookingService {
+public class BookingCommandService {
 
     @Autowired
     private BookingRepository bookingRepository;
@@ -19,10 +16,9 @@ public class BookingService {
     @Autowired
     private KafkaTemplate<String, Object> kafkaTemplate;
 
-    // Logic 1: Tạo đơn hàng mới
+    // Xử lý tạo đơn hàng (Command)
     @Transactional
     public Booking createBooking(String userId, String movieId) {
-        // 1. Lưu DB trạng thái PENDING
         Booking booking = new Booking();
         booking.setUserId(userId);
         booking.setMovieId(movieId);
@@ -30,7 +26,6 @@ public class BookingService {
         booking.setStatus("PENDING");
         bookingRepository.save(booking);
 
-        // 2. Bắn Event cho Payment
         Map<String, Object> event = Map.of(
                 "bookingId", booking.getId(),
                 "userId", userId,
@@ -43,19 +38,14 @@ public class BookingService {
         return booking;
     }
 
-    // Logic 2: Cập nhật trạng thái sau khi Payment trả kết quả
+    // Xử lý cập nhật trạng thái (Command)
     @Transactional
     public void updateBookingStatus(String bookingId, String status) {
         Optional<Booking> bookingOpt = bookingRepository.findById(bookingId);
         if (bookingOpt.isPresent()) {
             Booking booking = bookingOpt.get();
-            // Nếu Payment SUCCESS -> CONFIRMED, FAILED -> CANCELLED
             booking.setStatus("SUCCESS".equals(status) ? "CONFIRMED" : "CANCELLED");
             bookingRepository.save(booking);
-            System.out.println(">>> Đã update DB: Booking " + bookingId + " thành " + booking.getStatus());
         }
-    }
-  public List<Booking> findByUserId(String userId) {
-        return bookingRepository.findByUserId(userId);
     }
 }

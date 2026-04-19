@@ -4,25 +4,34 @@ import { motion } from 'framer-motion';
 import { Ticket } from 'lucide-react';
 import Navbar from '../components/Navbar.jsx';
 import { Button } from '../components/ui/button';
+import { useAuth } from '../context/AuthContext.jsx';
+import { toast } from 'sonner';
 
 const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL;
 
 const TicketHistoryPage = () => {
+  const { user } = useAuth();
   const [allBookings, setAllBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // GỌI API LẤY LỊCH SỬ ĐẶT VÉ
   useEffect(() => {
     const fetchHistory = async () => {
+      // Nếu user.id chưa có, có thể do chưa login lại
+      if (!user || !user.id || user.id === "undefined") {
+        setLoading(false);
+        return;
+      }
+
       try {
-        const response = await fetch(`${GATEWAY_URL}/api/bookings`);
+        console.log("Fetching history for user:", user.id);
+        const response = await fetch(`${GATEWAY_URL}/api/bookings?userId=${user.id}`);
+        
         if (response.ok) {
           const data = await response.json();
-          // Map data từ Backend cho khớp với table UI
           const formattedData = data.map(b => ({
             id: b.id,
-            movieTitle: `Phim ID: ${b.movieId}`, // Đồ án nếu không map chéo DB thì hiển thị tạm ID phim
-            seats: ['Ghế tiêu chuẩn'], 
+            movieTitle: `Phim ID: ${b.movieId}`,
+            seats: ['Ghế tiêu chuẩn'],
             date: new Date().toLocaleDateString(),
             time: 'N/A',
             totalAmount: b.amount,
@@ -30,15 +39,19 @@ const TicketHistoryPage = () => {
                     b.status === "CONFIRMED" ? "Đã xác nhận" : "Đã hủy"
           }));
           setAllBookings(formattedData);
+        } else {
+          const errorData = await response.text();
+          toast.error("Lỗi lấy lịch sử: " + errorData);
         }
       } catch (error) {
-        console.error("Chưa có API Get All Bookings hoặc lỗi mạng", error);
+        console.error("Lỗi fetch:", error);
+        toast.error("Không thể kết nối đến máy chủ.");
       } finally {
         setLoading(false);
       }
     };
     fetchHistory();
-  }, []);
+  }, [user]);
 
   const getStatusColor = (status) => {
     switch(status) {
@@ -57,11 +70,15 @@ const TicketHistoryPage = () => {
 
       <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
-        
         <main className="flex-1 px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto w-full">
           <h1 className="text-3xl font-bold text-foreground mb-8">Lịch sử đặt vé</h1>
-
-          {loading ? (
+          
+          {!user || !user.id || user.id === "undefined" ? (
+            <div className="text-center py-10 bg-yellow-500/10 border border-yellow-500 rounded-xl">
+               <p className="text-yellow-600">Bạn cần đăng xuất và đăng nhập lại để đồng bộ ID tài khoản.</p>
+               <Button className="mt-4" onClick={() => window.location.href='/login'}>Đến trang Đăng nhập</Button>
+            </div>
+          ) : loading ? (
              <p className="text-center text-muted-foreground">Đang tải dữ liệu...</p>
           ) : allBookings.length === 0 ? (
             <div className="text-center py-20 bg-card rounded-xl border border-border">

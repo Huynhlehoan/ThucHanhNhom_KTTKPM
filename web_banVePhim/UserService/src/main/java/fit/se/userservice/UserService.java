@@ -36,8 +36,11 @@ public class UserService {
         return user;
     }
 
-    public boolean login(String username, String password) {
+    public User login(String username, String password) {
         User user = userRepository.findFirstByUsername(username);
-        return user != null && user.getPassword().equals(password);
+        if (user != null && user.getPassword().equals(password)) {
+            return user;
+        }
+        return null;
     }
 }

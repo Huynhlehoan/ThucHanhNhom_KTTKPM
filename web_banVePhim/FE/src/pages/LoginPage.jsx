@@ -65,8 +65,12 @@ const LoginPage = () => {
 
         if (response.ok) {
           toast.success(data.message || 'Đăng nhập thành công');
-          // Lưu vào Context/LocalStorage để các trang khác biết user đã login
-          login({ username: email, name: email.split('@')[0] }); 
+          // Lưu vào Context/LocalStorage bao gồm cả id thực từ database
+          login({ 
+            id: data.userId, 
+            username: email, 
+            name: email.split('@')[0] 
+          }); 
           navigate('/');
         } else {
           toast.error(data.message || 'Sai tài khoản hoặc mật khẩu');

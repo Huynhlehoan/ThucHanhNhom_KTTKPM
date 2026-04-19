@@ -13,6 +13,7 @@ import MovieListPage from './pages/MovieListPage.jsx';
 import BookingPage from './pages/BookingPage.jsx';
 import TicketConfirmationPage from './pages/TicketConfirmationPage.jsx';
 import TicketHistoryPage from './pages/TicketHistoryPage.jsx';
+import WalletHistoryPage from './pages/WalletHistoryPage.jsx';
 
 function App() {
   return (
@@ -47,6 +48,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <TicketHistoryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/wallet"
+              element={
+                <ProtectedRoute>
+                  <WalletHistoryPage />
                 </ProtectedRoute>
               }
             />

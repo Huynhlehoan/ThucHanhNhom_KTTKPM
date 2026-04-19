@@ -45,6 +45,7 @@ public class PaymentWorker {
     )
     @KafkaListener(topics = "booking-events", groupId = "payment-group")
     public void processPayment(Map<String, Object> event) {
+        System.out.println(">>> [PAYMENT] Nhận được sự kiện từ Kafka: " + event);
         if (!"BOOKING_CREATED".equals(event.get("eventType"))) {
             return;
         }
@@ -82,5 +83,27 @@ public class PaymentWorker {
         }
 
         kafkaTemplate.send("payment-events", resultEvent);
+    }
+
+    // Logic 3: REPLAY - Hồi phục số dư từ lịch sử sự kiện (Event Sourcing)
+    public double replayBalance(String userId) {
+        System.out.println(">>> [REPLAY] Bắt đầu hồi phục số dư cho user: " + userId);
+        
+        // Truy vấn toàn bộ lịch sử sự kiện của User
+        java.util.List<EventStore> history = eventStoreRepository.findByUserId(userId);
+        
+        // Tính toán lại số dư từ đầu (Aggregate)
+        double newBalance = history.stream()
+                .mapToDouble(EventStore::getAmount)
+                .sum();
+        
+        // Cập nhật lại Read Model (CQRS)
+        WalletReadModel wallet = walletReadModelRepository.findById(userId)
+                .orElse(new WalletReadModel(userId, 0));
+        wallet.setBalance(newBalance);
+        walletReadModelRepository.save(wallet);
+        
+        System.out.println(">>> [REPLAY] Hoàn tất. Số dư mới: " + newBalance);
+        return newBalance;
     }
 }
