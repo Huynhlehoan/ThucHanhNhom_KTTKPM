@@ -1,0 +1,15 @@
+# Stage 1: Build
+FROM maven:3.9.6-eclipse-temurin-21-alpine AS build
+WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+# Build skip tests for faster deployment
+RUN mvn clean package -DskipTests
+
+# Stage 2: Run
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
+# Coppy file .env để app có thể đọc (nếu cần)
+COPY .env .env
+ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -1,0 +1,41 @@
+services:
+  mariadb-may2:
+    image: mariadb:10.11
+    container_name: mariadb-may2
+    ports:
+      - "3306:3306"
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: user_db # Sẽ tự tạo thêm movie_db, booking_db nếu cấu hình Hibernate allow
+    volumes:
+      - mariadb_data_may2:/var/lib/mysql
+
+  user-service:
+    build: ./UserService
+    container_name: user-service
+    ports:
+      - "${USER_SERVICE_PORT}:${USER_SERVICE_PORT}"
+    env_file: .env
+    depends_on:
+      - mariadb-may2
+
+  movie-service:
+    build: ./MovieService
+    container_name: movie-service
+    ports:
+      - "${MOVIE_SERVICE_PORT}:${MOVIE_SERVICE_PORT}"
+    env_file: .env
+    depends_on:
+      - mariadb-may2
+
+  booking-service:
+    build: ./BookingService
+    container_name: booking-service
+    ports:
+      - "${BOOKING_SERVICE_PORT}:${BOOKING_SERVICE_PORT}"
+    env_file: .env
+    depends_on:
+      - mariadb-may2
+
+volumes:
+  mariadb_data_may2:
