@@ -1,0 +1,127 @@
+{
+  "info": {
+    "name": "Flash Sale — Load Test",
+    "description": "Space-Based Architecture Load Test\nDùng Postman Runner để chạy nhiều lần liên tiếp.\n\nHướng dẫn:\n1. Import collection này vào Postman\n2. Đổi baseUrl trong Variables nếu cần\n3. Click Run Collection → đặt Iterations=50, Delay=0ms\n4. Quan sát stock giảm real-time",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "userId",  "value": "loadtest-user" }
+  ],
+  "item": [
+    {
+      "name": "1. Health Check",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/health"
+      }
+    },
+    {
+      "name": "2. Lấy danh sách sản phẩm (PU1)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/products"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Có sản phẩm', () => {",
+            "  const data = pm.response.json();",
+            "  pm.expect(data.length).to.be.above(0);",
+            "});"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "3. Xem stock real-time (PU4)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/stock/p1"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const d = pm.response.json();",
+            "pm.collectionVariables.set('currentStock', d.stock);",
+            "console.log('Stock p1:', d.stock);"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "4. Thêm vào giỏ hàng (PU2)",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/cart/add",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"productId\": \"p1\",\n  \"quantity\": 1\n}"
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('Add to cart OK', () => {",
+            "  pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+            "});",
+            "if (pm.response.code === 400) {",
+            "  console.log('Out of stock hoặc vượt quá số lượng:', pm.response.json().error);",
+            "}"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "5. Checkout (PU3) — Giảm stock ngay",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/checkout",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"customer\": {\n    \"name\": \"Load Test User\",\n    \"email\": \"loadtest@test.com\",\n    \"phone\": \"0901234567\"\n  },\n  \"shipping\": {\n    \"address\": \"123 Test Street\",\n    \"city\": \"Ho Chi Minh\",\n    \"district\": \"Quan 1\",\n    \"postalCode\": \"70000\"\n  },\n  \"paymentMethod\": \"cod\"\n}"
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('Checkout OK hoặc hết hàng', () => {",
+            "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 409]);",
+            "});",
+            "const d = pm.response.json();",
+            "if (pm.response.code === 200) {",
+            "  console.log('✅ Order:', d.orderId, '| Total:', d.total);",
+            "} else {",
+            "  console.log('❌', d.error, d.details);",
+            "}"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "6. Kiểm tra stock sau checkout (PU4)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/stock/p1"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "const d = pm.response.json();",
+            "console.log('Stock p1 sau checkout:', d.stock);",
+            "pm.test('Stock không âm', () => pm.expect(d.stock).to.be.at.least(0));"
+          ]
+        }
+      }]
+    }
+  ]
+}

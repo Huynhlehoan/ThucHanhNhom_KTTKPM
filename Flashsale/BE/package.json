@@ -1,0 +1,25 @@
+{
+  "name": "flash-sale-backend",
+  "version": "2.0.0",
+  "description": "Space-Based Architecture — Flash Sale System",
+  "private": true,
+  "scripts": {
+    "seed":       "node shared/seed.js",
+    "middleware": "node virtualization-middleware/index.js",
+    "pu1":        "node pu1-product/index.js",
+    "pu2":        "node pu2-cart/index.js",
+    "pu3":        "node pu3-order/index.js",
+    "pu4":        "node pu4-inventory/index.js",
+    "worker":     "node order-worker/index.js",
+    "start":      "concurrently -n MW,PU1,PU2,PU3,PU4,WRK -c cyan,green,yellow,blue,magenta,white \"npm run middleware\" \"npm run pu1\" \"npm run pu2\" \"npm run pu3\" \"npm run pu4\" \"npm run worker\"",
+    "start:scale": "concurrently -n MW,PU1A,PU1B,PU2,PU3,PU4,WRK -c cyan,green,greenBright,yellow,blue,magenta,white \"SCALE_MODE=true node virtualization-middleware/index.js\" \"PU1_PORT=8081 node pu1-product/index.js\" \"PU1_PORT=8091 node pu1-product/index.js\" \"npm run pu2\" \"npm run pu3\" \"npm run pu4\" \"npm run worker\""
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2",
+    "cors":         "^2.8.5",
+    "express":      "^4.18.2",
+    "http-proxy-middleware": "^3.0.3",
+    "ioredis":      "^5.3.2",
+    "uuid":         "^9.0.0"
+  }
+}

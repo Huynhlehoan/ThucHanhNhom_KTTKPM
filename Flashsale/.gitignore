@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+BE/node_modules/
+FE/node_modules/
+
+# Environment files (chứa IP/config nhạy cảm)
+FE/.env
+BE/.env
+
+# Build output
+dist/
+build/
+
+# Logs
+*.log
+/tmp/
+
+# DB files (generated at runtime)
+BE/db/
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
