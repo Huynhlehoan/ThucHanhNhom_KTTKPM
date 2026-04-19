@@ -17,8 +17,9 @@ const express    = require('express');
 const cors       = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const redis      = require('../shared/redis');
-const { publish }   = require('../shared/messagingGrid');
+const { publish }    = require('../shared/messagingGrid');
 const { asyncWrite } = require('../shared/dataWriter');
+const { enqueue }    = require('../shared/orderQueue');
 
 const app  = express();
 const PORT = process.env.PU3_PORT || 8083;
@@ -118,8 +119,8 @@ app.post('/checkout', async (req, res) => {
     console.log(`[PU3] ✅ Order ${orderId} confirmed for user ${userId}`);
     res.json({ orderId, estimatedDelivery: order.estimatedDelivery, total, status: 'confirmed' });
 
-    // ── Step 7: Data Writer ghi DB async (không block response) ──────────────
-    asyncWrite('orders', order);
+    // ── Step 7: Đẩy vào Queue → Worker xử lý async (email, analytics, DB) ──
+    enqueue(order);
 
   } catch (err) {
     console.error('[PU3] POST /checkout error:', err.message);
