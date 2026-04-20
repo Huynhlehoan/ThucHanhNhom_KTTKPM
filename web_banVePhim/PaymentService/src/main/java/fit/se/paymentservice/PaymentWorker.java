@@ -26,7 +26,7 @@ public class PaymentWorker {
     @KafkaListener(topics = "user-events", groupId = "payment-group")
     public void handleUserEvent(Map<String, Object> event) {
         if ("USER_REGISTERED".equals(event.get("eventType"))) {
-            String userId = (String) event.get("userId");
+            String userId = event.get("userId").toString();
             if (userId != null && !walletReadModelRepository.existsById(userId)) {
                 // Event Sourcing: Lưu lịch sử
                 eventStoreRepository.save(new EventStore(userId, "ACCOUNT_INITIALIZED", 500000));
@@ -50,8 +50,10 @@ public class PaymentWorker {
             return;
         }
 
-        String bookingId = (String) event.get("bookingId");
-        String userId = (String) event.get("userId");
+        String bookingId = event.get("bookingId").toString();
+        String userId = event.get("userId").toString();
+        String movieId = event.get("movieId") != null ? event.get("movieId").toString() : null;
+        String seatIds = event.get("seatIds") != null ? event.get("seatIds").toString() : null;
         double amount = Double.parseDouble(event.get("amount").toString());
 
         System.out.println(">>> [PAYMENT] Nhận yêu cầu thanh toán cho đơn: #" + bookingId + " của user: " + userId);
@@ -62,6 +64,8 @@ public class PaymentWorker {
         Map<String, Object> resultEvent = new HashMap<>();
         resultEvent.put("bookingId", bookingId);
         resultEvent.put("userId", userId);
+        resultEvent.put("movieId", movieId);
+        resultEvent.put("seatIds", seatIds);
 
         if (wallet != null && wallet.getBalance() >= amount) {
             // Event Sourcing: Ghi log trừ tiền

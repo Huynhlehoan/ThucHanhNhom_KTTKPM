@@ -17,9 +17,11 @@ public class BookingController {
 
     // GHI (Command): Tạo đơn hàng mới
     @PostMapping
-    public ResponseEntity<?> createBooking(@RequestBody Map<String, String> payload) {
-        String userId = payload.get("userId");
-        String movieId = payload.get("movieId");
+    public ResponseEntity<?> createBooking(@RequestBody Map<String, Object> payload) {
+        String userId = (String) payload.get("userId");
+        String movieId = (String) payload.get("movieId");
+        String seatIds = (String) payload.get("seatIds");
+        double amount = Double.parseDouble(payload.get("amount").toString());
 
         System.out.println(">>> [BOOKING] Nhận yêu cầu đặt vé: User=" + userId + ", Movie=" + movieId);
 
@@ -32,7 +34,7 @@ public class BookingController {
         }
 
         try {
-            Booking newBooking = commandService.createBooking(userId, movieId);
+            Booking newBooking = commandService.createBooking(userId, movieId, seatIds, amount);
             System.out.println(">>> [BOOKING] Đã lưu vé PENDING vào DB. ID: " + newBooking.getId());
             
             return ResponseEntity.ok(Map.of(

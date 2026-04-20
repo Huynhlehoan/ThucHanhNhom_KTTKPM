@@ -15,6 +15,7 @@ const cors       = require('cors');
 const redis      = require('../shared/redis');
 const LocalCache = require('../shared/localCache');
 const { subscribe, publish } = require('../shared/messagingGrid');
+const inventoryQueue = require('../shared/inventoryQueue');
 
 const app   = express();
 const PORT  = process.env.PU4_PORT || 8084;
@@ -94,7 +95,10 @@ app.post('/stock/decrease', async (req, res) => {
       // Publish stock.updated → PU1 invalidate cache
       await publish('stock.updated', { productId, newStock, decreased: quantity });
 
-      console.log(`[PU4] Stock ${productId}: ${current} → ${newStock}`);
+      // Push stock update to MQ for persistence
+      inventoryQueue.enqueue({ productId, newStock, timestamp: new Date().toISOString() });
+
+      console.log(`[PU4] Stock ${productId}: ${newStock}`);
       res.json({ productId, stock: newStock, decreased: quantity });
     } finally {
       await redis.del(lockKey);
@@ -113,6 +117,8 @@ app.post('/stock/increase', async (req, res) => {
     const newStock = await redis.incrby(`stock:${productId}`, quantity);
     cache.del(`stock:${productId}`);
     await publish('stock.updated', { productId, newStock, increased: quantity });
+    // Push stock update to MQ for persistence
+    inventoryQueue.enqueue({ productId, newStock, timestamp: new Date().toISOString() });
     res.json({ productId, stock: newStock, increased: quantity });
   } catch (err) {
     res.status(500).json({ error: 'Failed to increase stock' });

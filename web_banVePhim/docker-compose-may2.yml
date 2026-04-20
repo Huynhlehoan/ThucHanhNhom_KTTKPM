@@ -18,6 +18,8 @@ services:
     env_file: .env
     depends_on:
       - mariadb-may2
+    volumes:
+      - ./.env:/app/.env
 
   movie-service:
     build: ./MovieService
@@ -27,6 +29,8 @@ services:
     env_file: .env
     depends_on:
       - mariadb-may2
+    volumes:
+      - ./.env:/app/.env
 
   booking-service:
     build: ./BookingService
@@ -36,6 +40,8 @@ services:
     env_file: .env
     depends_on:
       - mariadb-may2
+    volumes:
+      - ./.env:/app/.env
 
 volumes:
   mariadb_data_may2:

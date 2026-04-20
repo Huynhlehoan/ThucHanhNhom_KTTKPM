@@ -12,6 +12,7 @@ const express    = require('express');
 const cors       = require('cors');
 const redis      = require('../shared/redis');
 const LocalCache = require('../shared/localCache');
+const cartQueue  = require('../shared/cartQueue');
 
 const app   = express();
 const PORT  = process.env.PU2_PORT || 8082;
@@ -85,6 +86,10 @@ app.post('/cart/add', async (req, res) => {
     await redis.hset(`cart:${userId}`, productId, JSON.stringify(cartItem));
     await redis.expire(`cart:${userId}`, 86400);
 
+    // Push to MQ for background processing/persistence
+    const currentCart = await fetchCartFromGrid(userId);
+    cartQueue.enqueue({ userId, items: currentCart, timestamp: new Date().toISOString() });
+
     // Invalidate local cache
     cache.del(`cart:${userId}`);
 
@@ -104,6 +109,10 @@ app.delete('/cart/clear', async (req, res) => {
   try {
     await redis.del(`cart:${userId}`);
     cache.del(`cart:${userId}`);
+    
+    // Push to MQ
+    cartQueue.enqueue({ userId, items: [], action: 'clear', timestamp: new Date().toISOString() });
+
     res.json({ userId, items: [] });
   } catch (err) {
     console.error('[PU2] DELETE /cart/clear error:', err.message);

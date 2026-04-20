@@ -94,7 +94,9 @@ const BookingPage = () => {
         },
         body: JSON.stringify({ 
           userId: userId, 
-          movieId: movieId.toString() 
+          movieId: movieId.toString(),
+          seatIds: selectedSeats.map(s => s.id).join(','), // Gửi ID của các ghế, cách nhau dấu phẩy
+          amount: selectedSeats.reduce((sum, seat) => sum + seat.price, 0) // Tính tổng tiền
         }) // Gói hàng JSON gửi đi
       });
       

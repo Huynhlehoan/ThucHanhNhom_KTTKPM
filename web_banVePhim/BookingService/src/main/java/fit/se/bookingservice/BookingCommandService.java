@@ -18,11 +18,12 @@ public class BookingCommandService {
 
     // Xử lý tạo đơn hàng (Command)
     @Transactional
-    public Booking createBooking(String userId, String movieId) {
+    public Booking createBooking(String userId, String movieId, String seatIds, double amount) {
         Booking booking = new Booking();
         booking.setUserId(userId);
         booking.setMovieId(movieId);
-        booking.setAmount(150000);
+        booking.setSeatIds(seatIds);
+        booking.setAmount(amount);
         booking.setStatus("PENDING");
         bookingRepository.save(booking);
 
@@ -30,6 +31,7 @@ public class BookingCommandService {
                 "bookingId", booking.getId(),
                 "userId", userId,
                 "movieId", movieId,
+                "seatIds", seatIds,
                 "amount", booking.getAmount(),
                 "eventType", "BOOKING_CREATED"
         );

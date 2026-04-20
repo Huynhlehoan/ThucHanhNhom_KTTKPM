@@ -13,6 +13,7 @@ RUN npx vite build --outDir dist
 # Stage 2: Serve
 FROM nginx:stable-alpine
 COPY --from=build /app/dist /usr/share/nginx/html
-# Copy config nginx nếu cần (ở đây dùng mặc định port 80)
+# Copy config nginx để handle SPA routing
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

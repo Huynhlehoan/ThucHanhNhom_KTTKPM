@@ -15,7 +15,7 @@ const cors       = require('cors');
 const redis      = require('../shared/redis');
 const LocalCache = require('../shared/localCache');
 const { subscribe } = require('../shared/messagingGrid');
-const { readDb }    = require('../shared/dataWriter');
+const productQueue = require('../shared/productQueue');
 
 const app   = express();
 const PORT  = process.env.PU1_PORT || 8081;
@@ -57,9 +57,9 @@ app.get('/products', async (_req, res) => {
       });
       console.log('[PU1] Data Grid HIT → products');
     } else {
-      // 3. Fallback: Data Reader (db file)
-      products = readDb('products');
-      console.log('[PU1] Data Reader fallback → db/products.json');
+      // 3. Fallback: Data Grid is empty
+      products = [];
+      console.log('[PU1] Data Grid EMPTY');
     }
 
     // Lưu vào local cache
@@ -96,6 +96,33 @@ app.get('/products/:id', async (req, res) => {
   } catch (err) {
     console.error('[PU1] GET /products/:id error:', err.message);
     res.status(500).json({ error: 'Failed to fetch product' });
+  }
+});
+
+// ── POST /products ───────────────────────────────────────────────────────────
+app.post('/products', async (req, res) => {
+  const product = req.body;
+  if (!product.id || !product.name) {
+    return res.status(400).json({ error: 'id and name are required' });
+  }
+
+  try {
+    // 1. Lưu vào Data Grid (Redis)
+    await redis.hset('products', product.id, JSON.stringify(product));
+    await redis.set(`stock:${product.id}`, product.stock || 0);
+
+    // 2. Push to MQ for async persistence
+    await productQueue.enqueue(product);
+
+    // 3. Invalidate local cache
+    cache.del('products:all');
+    cache.del(`product:${product.id}`);
+
+    console.log(`[PU1] ✅ Product ${product.id} created & enqueued`);
+    res.status(201).json({ message: 'Product created', product });
+  } catch (err) {
+    console.error('[PU1] POST /products error:', err.message);
+    res.status(500).json({ error: 'Failed to create product' });
   }
 });
 
